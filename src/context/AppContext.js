@@ -7,12 +7,13 @@ export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
 
-   const apiUrl = 'http://192.168.1.122/api/data';
+   const apiUrl = 'http://192.168.1.108/api/data';
 
 
    const [realTimeData, setRealTimeData] = useState([]);
 
    const lastRealTimeData = useRef(null);
+   const interval = useRef(null);
 
    const [realTimeRefreshTime, setRealTimeRefreshTime] = useState(0);
 
@@ -35,7 +36,7 @@ export const AppProvider = ({ children }) => {
             avgCurrent: (a1 + a2 + a3) / 3,
             bv1: v3,
             bv2: v2 - v3,
-            bv3: v1 - v2 - v3,
+            bv3: v1 - v2 ,
             v1, a1, v2, a2, v3, a3
          };
       } catch (error) {
@@ -99,14 +100,13 @@ export const AppProvider = ({ children }) => {
       })();
    }, []);
 
-   let interval = null;
    useEffect(() => {
-      if (interval) {
-         clearInterval(interval);
+      if (interval.current) {
+         clearInterval(interval.current);
          console.log('Intervalle de polling nettoyé');
       }
       if (lastRealTimeData.current && realTimeRefreshTime > 0) {
-         interval = setInterval(async () => {
+         interval.current = setInterval(async () => {
             try {
                refreshRealTimeData()
             } catch (error) {
@@ -115,8 +115,8 @@ export const AppProvider = ({ children }) => {
          }, realTimeRefreshTime);
       }
       return () => {
-         if (interval) {
-            clearInterval(interval);
+         if (interval.current) {
+            clearInterval(interval.current);
             console.log('Intervalle nettoyé lors du démontage');
          }
       };

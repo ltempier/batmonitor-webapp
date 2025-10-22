@@ -27,6 +27,7 @@ function App() {
           <IconSun className="h-4 w-4" />
         )}
       </Button> */}
+
       <AppProvider>
         <RealTime />
       </AppProvider>

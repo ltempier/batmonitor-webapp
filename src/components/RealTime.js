@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Brush } from 'recharts';
+
 import { Card, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "./ui/select"
+
 import { useApp } from '../context/AppContext';
 
 function RealTime() {
     const { realTimeData, realTimeRefreshTime, setRealTimeRefreshTime, refreshRealTimeData } = useApp();
-
 
     const vColor = '#03a5fc';
     const aColor = '#d32525';
@@ -51,15 +60,32 @@ function RealTime() {
     return (
         <div>
             <Card className="mb-1 p-4">
-                <Button onClick={refreshRealTimeData}>Refresh</Button>
+                <CardTitle className="flex items-center justify-between">  {/* 🎯 AJOUTÉ */}
+                    <div className="flex items-center gap-2">  {/* 🎯 AJOUTÉ */}
+                        <Button onClick={refreshRealTimeData}>Refresh</Button>
+                        <Select value={realTimeRefreshTime || 0} onValueChange={setRealTimeRefreshTime}>
+                            <SelectTrigger aria-label="Auto refresh" className="w-[120px]">
+                                <SelectValue placeholder="Off" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={0} className="rounded-lg">Off</SelectItem>
+                                <SelectItem value={1000} className="rounded-lg">1s</SelectItem>
+                                <SelectItem value={5000} className="rounded-lg">5s</SelectItem>
+                                <SelectItem value={30000} className="rounded-lg">30s</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </CardTitle>
             </Card>
 
             {chartConfigs.map((config, index) => (
-                <Card key={index} className="mb-1 p-4">
-                    <CardTitle className="text-center">{config.title}</CardTitle>
+                <Card key={index} className="mb-1">
+                    <CardTitle className="text-center m-2">{config.title}</CardTitle>
                     <CardContent>
                         <ChartContainer
-                            config={{}}
+                            config={{
+        
+                            }}
                             className="h-[300px] w-full"
                         >
                             <ResponsiveContainer width="100%" height="100%">
@@ -71,26 +97,23 @@ function RealTime() {
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis
                                         dataKey="date"
-                                        stroke="#ccc"
                                         tick={<CustomTick />} // Utilisation du tick personnalisé
                                         tickMargin={20}
                                     />
                                     <YAxis
                                         yAxisId="voltage"
-                                        domain={[0, 14]}
-                                        label={{ value: 'Voltage (V)', angle: -90, position: 'insideLeft', fill: '#ccc' }}
-                                        tickFormatter={(value) => value.toFixed(2)}
-                                        stroke="#ccc"
-                                        tick={{ fill: '#ccc' }}
+                                        domain={['auto', 'auto']}
+                                        label={{ value: 'Voltage (V)', angle: -90, position: 'insideLeft' }}
+                                        tickFormatter={(value) => value.toFixed(2) + ' V'}
+
                                     />
                                     <YAxis
                                         yAxisId="current"
-                                        domain={[0, 2]}
+                                        domain={['auto', 'auto']}
                                         orientation="right"
-                                        label={{ value: 'Current (A)', angle: 90, position: 'insideRight', fill: '#ccc' }}
-                                        tickFormatter={(value) => value.toFixed(2)}
-                                        stroke="#ccc"
-                                        tick={{ fill: '#ccc' }}
+                                        label={{ value: 'Current (A)', angle: 90, position: 'insideRight' }}
+                                        tickFormatter={(value) => value.toFixed(2) + ' A'}
+
                                     />
                                     <ChartTooltip
                                         content={<ChartTooltipContent />}
@@ -104,6 +127,7 @@ function RealTime() {
                                         strokeWidth={1}
                                         dot={false}
                                         isAnimationActive={false}
+
                                     />
                                     <Line
                                         yAxisId="current"
