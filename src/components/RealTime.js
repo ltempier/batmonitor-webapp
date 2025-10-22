@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import moment from 'moment';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Brush } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceArea } from 'recharts';
 
 import { Card, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
@@ -17,12 +17,19 @@ import {
 import { useApp } from '../context/AppContext';
 
 function RealTime() {
-    const { realTimeData, realTimeRefreshTime, setRealTimeRefreshTime, refreshRealTimeData } = useApp();
+    const { lastRealTimeData, realTimeData, realTimeRefreshTime, setRealTimeRefreshTime, refreshRealTimeData } = useApp();
+
+    const [left, setLeft] = useState("dataMin");
+    const [right, setRight] = useState("dataMax");
+    const [zoomGraph, setZoomGraph] = useState({
+        refAreaLeft: null,
+        refAreaRight: null,
+    });
 
     const vColor = '#03a5fc';
     const aColor = '#d32525';
 
-    // Chart configurations for each channel
+    // Configuration des canaux pour chaque graphique
     const chartConfigs = [
         {
             title: 'Channel 1',
@@ -38,30 +45,69 @@ function RealTime() {
         },
     ];
 
-
-    const CustomTick = ({ x, y, payload }) => {
-        // Formater la date avec moment
-        const tickDate = moment.utc(payload.value);
-        const datePart = tickDate.format('YYYY-MM-DD');
-        const timePart = tickDate.format('HH:mm:ss');
-
-        return (
-            <g transform={`translate(${x},${y})`}>
-                <text x={0} y={-6} textAnchor="middle" fill="#ccc">
-                    {datePart}
-                </text>
-                <text x={0} y={9} textAnchor="middle" fill="#ccc">
-                    {timePart}
-                </text>
-            </g>
-        );
+    // Personnalisation de l'affichage des ticks de l'axe des X
+    const CustomTimeTick = ({ x, y, payload }) => {
+        try {
+            const tickDate = moment(payload.value);
+            const datePart = tickDate.format('YYYY-MM-DD');
+            const timePart = tickDate.format('HH:mm:ss');
+            return (
+                <g transform={`translate(${x},${y})`}>
+                    <text x={0} y={-5} textAnchor="middle" fill="#ccc">
+                        {datePart}
+                    </text>
+                    <text x={0} y={9} textAnchor="middle" fill="#ccc">
+                        {timePart}
+                    </text>
+                </g>
+            );
+        } catch (e) {
+            return null;
+        }
     };
+
+    const zoomOut = useCallback(() => {
+        setLeft("dataMin");
+        setRight("dataMax");
+        setZoomGraph({ refAreaLeft: null, refAreaRight: null });
+    }, []);
+
+    const onMouseDown = useCallback((e) => {
+        setZoomGraph((prev) => ({ ...prev, refAreaLeft: e.activeLabel }));
+    }, []);
+
+    const onMouseMove = useCallback((e) => {
+        if (zoomGraph.refAreaLeft && e.activeLabel >= 0) {
+            setZoomGraph((prev) => ({
+                ...prev,
+                refAreaRight: e.activeLabel,
+            }));
+        }
+    }, [zoomGraph.refAreaLeft]);
+
+    const onMouseUp = useCallback(() => {
+        setZoomGraph((currentZoom) => {
+            if (currentZoom.refAreaLeft && currentZoom.refAreaRight) {
+                const leftVal = Number(currentZoom.refAreaLeft);
+                const rightVal = Number(currentZoom.refAreaRight);
+
+                if (lastRealTimeData?.current?.timestamp && rightVal > (lastRealTimeData.current.timestamp - 30000))
+                    setRight("dataMax");
+                else
+                    setRight(rightVal);
+
+                setLeft(leftVal);
+
+            }
+            return { refAreaLeft: null, refAreaRight: null };
+        });
+    }, []);
 
     return (
         <div>
             <Card className="mb-1 p-4">
-                <CardTitle className="flex items-center justify-between">  {/* 🎯 AJOUTÉ */}
-                    <div className="flex items-center gap-2">  {/* 🎯 AJOUTÉ */}
+                <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
                         <Button onClick={refreshRealTimeData}>Refresh</Button>
                         <Select value={realTimeRefreshTime || 0} onValueChange={setRealTimeRefreshTime}>
                             <SelectTrigger aria-label="Auto refresh" className="w-[120px]">
@@ -74,6 +120,10 @@ function RealTime() {
                                 <SelectItem value={30000} className="rounded-lg">30s</SelectItem>
                             </SelectContent>
                         </Select>
+
+                        <Button onClick={zoomOut}>Zoom Out</Button>
+
+                        {moment(zoomGraph.refAreaLeft || left).format("YYYY-MM-DD HH:mm:ss")} - {zoomGraph.refAreaRight ? moment(zoomGraph.refAreaRight).format("YYYY-MM-DD HH:mm:ss") : (right == "dataMax" ? "now" : moment(right).format("YYYY-MM-DD HH:mm:ss"))}
                     </div>
                 </CardTitle>
             </Card>
@@ -83,9 +133,7 @@ function RealTime() {
                     <CardTitle className="text-center m-2">{config.title}</CardTitle>
                     <CardContent>
                         <ChartContainer
-                            config={{
-        
-                            }}
+                            config={config}
                             className="h-[300px] w-full"
                         >
                             <ResponsiveContainer width="100%" height="100%">
@@ -93,32 +141,50 @@ function RealTime() {
                                     data={realTimeData}
                                     animationDuration={0}
                                     syncId="realtime-sync"
+                                    onMouseDown={onMouseDown}
+                                    onMouseMove={onMouseMove}
+                                    onMouseUp={onMouseUp}
                                 >
                                     <CartesianGrid strokeDasharray="3 3" />
+
                                     <XAxis
-                                        dataKey="date"
-                                        tick={<CustomTick />} // Utilisation du tick personnalisé
+                                        dataKey="timestamp"
+                                        name='Time'
+                                        type="number"
+                                        tick={<CustomTimeTick />} // Utilisation du tick personnalisé
                                         tickMargin={20}
+                                        domain={[left, right]}
+                                        padding={10}
+                                        allowDataOverflow
                                     />
+
                                     <YAxis
                                         yAxisId="voltage"
-                                        domain={['auto', 'auto']}
+                                        domain={['dataMin - 1', 'dataMax + 1']}
                                         label={{ value: 'Voltage (V)', angle: -90, position: 'insideLeft' }}
                                         tickFormatter={(value) => value.toFixed(2) + ' V'}
-
                                     />
                                     <YAxis
                                         yAxisId="current"
-                                        domain={['auto', 'auto']}
+                                        domain={['0', 'dataMax + 0.1']}
                                         orientation="right"
                                         label={{ value: 'Current (A)', angle: 90, position: 'insideRight' }}
                                         tickFormatter={(value) => value.toFixed(2) + ' A'}
-
                                     />
                                     <ChartTooltip
                                         content={<ChartTooltipContent />}
-                                    //   formatter={(value, name) => [value.toFixed(2), chartConfig[name].label]}
+                                        labelFormatter={(label, payload) => {
+                                            if (payload && payload.length > 0) {
+                                                const item = payload[0]; // Prends le premier élément du payload
+                                                const timestamp = item?.payload?.timestamp;
+                                                if (timestamp) {
+                                                    return `Time ${moment(timestamp).format("HH:mm:ss,SS")}`;
+                                                }
+                                            }
+                                            return "Timestamp non disponible";
+                                        }}
                                     />
+
                                     <Line
                                         yAxisId="voltage"
                                         type="monotone"
@@ -127,7 +193,6 @@ function RealTime() {
                                         strokeWidth={1}
                                         dot={false}
                                         isAnimationActive={false}
-
                                     />
                                     <Line
                                         yAxisId="current"
@@ -138,6 +203,11 @@ function RealTime() {
                                         dot={false}
                                         isAnimationActive={false}
                                     />
+                                    {zoomGraph.refAreaLeft && zoomGraph.refAreaRight && (
+                                        <ReferenceArea
+                                            yAxisId="voltage" x1={zoomGraph.refAreaLeft} x2={zoomGraph.refAreaRight} fillOpacity={0.1}
+                                        />
+                                    )}
                                 </LineChart>
                             </ResponsiveContainer>
                         </ChartContainer>

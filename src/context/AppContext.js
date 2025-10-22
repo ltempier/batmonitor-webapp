@@ -8,6 +8,7 @@ export const AppContext = createContext();
 export const AppProvider = ({ children }) => {
 
    const apiUrl = 'http://192.168.1.108/api/data';
+   // const apiUrl = 'data.json';
 
 
    const [realTimeData, setRealTimeData] = useState([]);
@@ -32,7 +33,7 @@ export const AppProvider = ({ children }) => {
 
          return {
             ...data,
-            timestamp: moment(data.date).valueOf(),
+            timestamp: moment.utc(data.date).valueOf(),
             avgCurrent: (a1 + a2 + a3) / 3,
             bv1: v3,
             bv2: v2 - v3,
@@ -124,6 +125,7 @@ export const AppProvider = ({ children }) => {
 
    return (
       <AppContext.Provider value={{
+         lastRealTimeData,
          realTimeData,
          realTimeRefreshTime,
          setRealTimeRefreshTime,
