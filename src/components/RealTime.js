@@ -5,14 +5,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Refe
 import { Card, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "./ui/select"
+import DateRangePicker from "./DateRangePicker"
+
 
 import { useApp } from '../context/AppContext';
 
@@ -91,7 +87,7 @@ function RealTime() {
                 const leftVal = Number(currentZoom.refAreaLeft);
                 const rightVal = Number(currentZoom.refAreaRight);
 
-                if (lastRealTimeData?.current?.timestamp && rightVal > (lastRealTimeData.current.timestamp - 30000))
+                if (lastRealTimeData?.current?.timestamp && rightVal > (lastRealTimeData.current.timestamp - 5000))
                     setRight("dataMax");
                 else
                     setRight(rightVal);
@@ -123,7 +119,8 @@ function RealTime() {
 
                         <Button onClick={zoomOut}>Zoom Out</Button>
 
-                        {moment(zoomGraph.refAreaLeft || left).format("YYYY-MM-DD HH:mm:ss")} - {zoomGraph.refAreaRight ? moment(zoomGraph.refAreaRight).format("YYYY-MM-DD HH:mm:ss") : (right == "dataMax" ? "now" : moment(right).format("YYYY-MM-DD HH:mm:ss"))}
+                        <DateRangePicker left={zoomGraph.refAreaLeft || left} right={zoomGraph.refAreaRight || right}></DateRangePicker>
+
                     </div>
                 </CardTitle>
             </Card>

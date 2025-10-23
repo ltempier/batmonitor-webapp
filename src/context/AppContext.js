@@ -7,8 +7,9 @@ export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
 
-   const apiUrl = 'http://192.168.1.108/api/data';
-   // const apiUrl = 'data.json';
+   // const apiUrl = 'http://192.168.1.108/api/data';
+   //const apiUrl = '/api/data';
+    const apiUrl = 'data.json';
 
 
    const [realTimeData, setRealTimeData] = useState([]);
