@@ -30,7 +30,7 @@ export const rangeValueToTimestamp = (value) => {
     if (typeof value === 'string') {
         const strValue = value.replace(/\s+/g, '');
         if (strValue === 'now')
-            return moment().valueOf()
+            return moment().add(1,'s').valueOf()
 
         const duration = parseDuration(strValue)
         if (duration) {
@@ -54,8 +54,8 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
     const [toCalendarOpen, setToCalendarOpen] = useState(false);
 
     const presetRanges = [
-        { label: "Last 1 second", left: 'now-1s', right: 'now' },
-        { label: "Last 10 seconds", left: 'now-10s', right: 'now' },
+        // { label: "Last 1 second", left: 'now-1s', right: 'now' },
+        // { label: "Last 10 seconds", left: 'now-10s', right: 'now' },
         { label: "Last 30 seconds", left: 'now-30s', right: 'now' },
         { label: "Last 1 minute", left: 'now-1m', right: 'now' },
         { label: "Last 5 minutes", left: 'now-5m', right: 'now' },

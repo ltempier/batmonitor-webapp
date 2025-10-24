@@ -7,15 +7,15 @@ export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
 
-   // const apiUrl = 'http://192.168.1.108/api/data';
+   const apiUrl = 'http://192.168.1.123/api/data';
    //const apiUrl = '/api/data';
-    const apiUrl = 'data.json';
+   //  const apiUrl = 'data.json';
 
 
    const [realTimeData, setRealTimeData] = useState([]);
 
    const lastRealTimeData = useRef(null);
-   const interval = useRef(null);
+   const timeoutId = useRef(null);
 
    const [realTimeRefreshTime, setRealTimeRefreshTime] = useState(0);
 
@@ -38,7 +38,7 @@ export const AppProvider = ({ children }) => {
             avgCurrent: (a1 + a2 + a3) / 3,
             bv1: v3,
             bv2: v2 - v3,
-            bv3: v1 - v2 ,
+            bv3: v1 - v2,
             v1, a1, v2, a2, v3, a3
          };
       } catch (error) {
@@ -89,7 +89,7 @@ export const AppProvider = ({ children }) => {
       });
    };
 
-   const refreshRealTimeData = () => fetchData(lastRealTimeData.current? lastRealTimeData.current.date : null)
+   const refreshRealTimeData = () => fetchData(lastRealTimeData.current ? lastRealTimeData.current.date : null)
 
    useEffect(() => {
       (async () => {
@@ -103,25 +103,30 @@ export const AppProvider = ({ children }) => {
    }, []);
 
    useEffect(() => {
-      if (interval.current) {
-         clearInterval(interval.current);
-         console.log('Intervalle de polling nettoyé');
+      if (timeoutId.current) {
+         clearTimeout(timeoutId.current);
+         // console.log('Intervalle de polling nettoyé');
       }
       if (lastRealTimeData.current && realTimeRefreshTime > 0) {
-         interval.current = setInterval(async () => {
+
+         const refresh = async () => {
             try {
-               refreshRealTimeData()
+               await refreshRealTimeData()
+               timeoutId.current = setTimeout(refresh, realTimeRefreshTime)
             } catch (error) {
                console.error('Erreur lors du polling:', error);
             }
-         }, realTimeRefreshTime);
-      }
-      return () => {
-         if (interval.current) {
-            clearInterval(interval.current);
-            console.log('Intervalle nettoyé lors du démontage');
          }
-      };
+
+         refresh()
+      }
+
+      return () => {
+         if (timeoutId.current) {
+            clearTimeout(timeoutId.current);
+            // console.log('Timeout nettoyé lors du démontage');
+         }
+      }
    }, [realTimeRefreshTime]);
 
    return (

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import moment from 'moment';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceArea } from 'recharts';
 
@@ -21,6 +21,9 @@ function RealTime() {
     const [chartData, setChartData] = useState([]);
 
     useEffect(() => {
+        if (left === "dataMin" && right === "dataMax")
+            return setChartData(realTimeData)
+
         const filteredData = realTimeData.filter((data) => {
             let afterMin = (left === "dataMin")
             let beforeMax = (right === "dataMax")
@@ -168,8 +171,8 @@ function RealTime() {
                                         tick={<CustomTimeTick />} // Utilisation du tick personnalisé
                                         tickMargin={20}
                                         domain={["dataMin", "dataMax"]}
-                                        padding={10}
-                                        allowDataOverflow
+                                        // padding={10}
+                                        // allowDataOverflow
                                     />
 
                                     <YAxis
