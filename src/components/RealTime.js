@@ -19,22 +19,30 @@ function RealTime() {
     const [right, setRight] = useState("dataMax");
 
     const [chartData, setChartData] = useState([]);
+    const [xAxisDomain, setXAxisDomain] = useState([left, right]);
 
     useEffect(() => {
         if (left === "dataMin" && right === "dataMax")
             return setChartData(realTimeData)
 
+        let minTimestamp = null
+        let maxTimestamp = null
+        try {
+            minTimestamp = rangeValueToTimestamp(left)
+        } catch (e) {
+
+        }
+        try {
+            maxTimestamp = rangeValueToTimestamp(right)
+        } catch (e) {
+
+        }
+        setXAxisDomain([minTimestamp === null ? "dataMin" : minTimestamp, maxTimestamp === null ? "dataMax" : maxTimestamp])
+
         const filteredData = realTimeData.filter((data) => {
-            let afterMin = (left === "dataMin")
-            let beforeMax = (right === "dataMax")
-            if (!afterMin) {
-                const minTimestamp = rangeValueToTimestamp(left)
-                afterMin = data.timestamp >= minTimestamp
-            }
-            if (!beforeMax) {
-                const maxTimestamp = rangeValueToTimestamp(right)
-                beforeMax = data.timestamp <= maxTimestamp
-            }
+            let afterMin = (left === "dataMin") || data.timestamp >= minTimestamp
+            let beforeMax = (right === "dataMax") || data.timestamp <= maxTimestamp
+
             return afterMin && beforeMax
         })
         setChartData(filteredData)
@@ -170,9 +178,9 @@ function RealTime() {
                                         type="number"
                                         tick={<CustomTimeTick />} // Utilisation du tick personnalisé
                                         tickMargin={20}
-                                        domain={["dataMin", "dataMax"]}
-                                        // padding={10}
-                                        // allowDataOverflow
+                                        domain={xAxisDomain}
+                                    // padding={10}
+                                    // allowDataOverflow
                                     />
 
                                     <YAxis

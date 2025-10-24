@@ -27,10 +27,15 @@ function parseDuration(str) {
 }
 
 export const rangeValueToTimestamp = (value) => {
+
+    const dateValue = moment(value)
+    if (dateValue.isValid())
+        return dateValue.valueOf()
+
     if (typeof value === 'string') {
         const strValue = value.replace(/\s+/g, '');
         if (strValue === 'now')
-            return moment().add(1,'s').valueOf()
+            return moment().add(1, 's').valueOf()
 
         const duration = parseDuration(strValue)
         if (duration) {
@@ -39,13 +44,27 @@ export const rangeValueToTimestamp = (value) => {
         }
     }
 
-    const dateValue = moment(value)
-    if (dateValue.isValid())
-        return dateValue.valueOf()
-
-    throw new Error('rangeValueToTimestamp err value not supported: ', value)
+    throw new Error('rangeValueToTimestamp err value not supported: ' + value)
 }
 
+const isRangeValueValid = (value) => {
+    if (value == 'dataMin' || value == 'dataMax')
+        return true
+
+    try {
+        rangeValueToTimestamp(value)
+        return true
+    } catch (e) {
+        return false
+    }
+}
+
+const rangeValueToString = (value) => {
+    const dateValue = moment(value)
+    if (dateValue.isValid())
+        return dateValue.format('YYYY-MM-DD HH:mm:ss')
+    return value
+}
 
 function DateRangePicker({ left, right, setLeft, setRight }) {
 
@@ -71,22 +90,10 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
     const [bufferTo, setBufferTo] = useState("");
 
     useEffect(() => {
-        setBufferFrom(left)
-        setBufferTo(right)
+        setBufferFrom(rangeValueToString(left))
+        setBufferTo(rangeValueToString(right))
     }, [right, left])
 
-
-    const isValid = (value) => {
-        if (value == 'dataMin' || value == 'dataMax')
-            return true
-
-        try {
-            rangeValueToTimestamp(value)
-            return true
-        } catch (e) {
-            return false
-        }
-    }
 
     const handlePresetSelect = (preset) => {
         setLeft(preset.left);
@@ -95,18 +102,40 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
     };
 
     const applyTimeRange = () => {
-        if (isValid(bufferFrom))
+        if (isRangeValueValid(bufferFrom))
             setLeft(bufferFrom);
-
-        if (isValid(bufferTo))
+        if (isRangeValueValid(bufferTo))
             setRight(bufferTo);
-
         setOpen(false)
     }
 
     const zoomOut = () => {
         setLeft("dataMin");
         setRight("dataMax");
+    }
+
+    const goLeft = () => {
+        try {
+            const leftTimestamp = rangeValueToTimestamp(left)
+            const rightTimestamp = rangeValueToTimestamp(right)
+
+            setRight(leftTimestamp)
+            setLeft(leftTimestamp + (leftTimestamp - rightTimestamp))
+        } catch (e) {
+
+        }
+    }
+
+    const goRight = () => {
+        try {
+            const leftTimestamp = rangeValueToTimestamp(left)
+            const rightTimestamp = rangeValueToTimestamp(right)
+
+            setLeft(rightTimestamp)
+            setRight(rightTimestamp - (leftTimestamp - rightTimestamp))
+        } catch (e) {
+
+        }
     }
 
 
@@ -140,13 +169,13 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
 
             <ButtonGroup>
                 <ButtonGroup className="hidden sm:flex">
-                    <Button variant="outline" size="icon" aria-label="Go Back" onClick={zoomOut}>
+                    <Button variant="outline" size="icon" aria-label="Zoom out" onClick={zoomOut}>
                         <ExpandIcon />
                     </Button>
                 </ButtonGroup>
 
                 <ButtonGroup className="hidden sm:flex">
-                    <Button variant="outline" size="icon" aria-label="Go Back">
+                    <Button variant="outline" size="icon" aria-label="Go Back" disabled={left === "dataMin"} onClick={goLeft}>
                         <ArrowLeftIcon />
                     </Button>
                 </ButtonGroup>
@@ -161,7 +190,7 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
                 </PopoverTrigger>
 
                 <ButtonGroup className="hidden sm:flex">
-                    <Button variant="outline" size="icon" aria-label="Go Back">
+                    <Button variant="outline" size="icon" aria-label="Go Back" disabled={right === "dataMax"} onClick={goRight}>
                         <ArrowRightIcon />
                     </Button>
                 </ButtonGroup>
