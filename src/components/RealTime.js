@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import moment from 'moment';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceArea } from 'recharts';
 
@@ -7,7 +7,7 @@ import { Button } from './ui/button';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
-import DateRangePicker from "./DateRangePicker"
+import DateRangePicker, { rangeValueToTimestamp } from "./DateRangePicker"
 
 
 import { useApp } from '../context/AppContext';
@@ -17,6 +17,27 @@ function RealTime() {
 
     const [left, setLeft] = useState("dataMin");
     const [right, setRight] = useState("dataMax");
+
+    const [chartData, setChartData] = useState([]);
+
+    useEffect(() => {
+        const filteredData = realTimeData.filter((data) => {
+            let afterMin = (left === "dataMin")
+            let beforeMax = (right === "dataMax")
+            if (!afterMin) {
+                const minTimestamp = rangeValueToTimestamp(left)
+                afterMin = data.timestamp >= minTimestamp
+            }
+            if (!beforeMax) {
+                const maxTimestamp = rangeValueToTimestamp(right)
+                beforeMax = data.timestamp <= maxTimestamp
+            }
+            return afterMin && beforeMax
+        })
+        setChartData(filteredData)
+    }, [realTimeData, left, right])
+
+
     const [zoomGraph, setZoomGraph] = useState({
         refAreaLeft: null,
         refAreaRight: null,
@@ -62,12 +83,6 @@ function RealTime() {
         }
     };
 
-    const zoomOut = useCallback(() => {
-        setLeft("dataMin");
-        setRight("dataMax");
-        setZoomGraph({ refAreaLeft: null, refAreaRight: null });
-    }, []);
-
     const onMouseDown = useCallback((e) => {
         setZoomGraph((prev) => ({ ...prev, refAreaLeft: e.activeLabel }));
     }, []);
@@ -84,16 +99,15 @@ function RealTime() {
     const onMouseUp = useCallback(() => {
         setZoomGraph((currentZoom) => {
             if (currentZoom.refAreaLeft && currentZoom.refAreaRight) {
-                const leftVal = Number(currentZoom.refAreaLeft);
-                const rightVal = Number(currentZoom.refAreaRight);
+                const leftVal = Math.min(Number(currentZoom.refAreaLeft), Number(currentZoom.refAreaRight));
+                const rightVal = Math.max(Number(currentZoom.refAreaRight), Number(currentZoom.refAreaLeft));
 
-                if (lastRealTimeData?.current?.timestamp && rightVal > (lastRealTimeData.current.timestamp - 5000))
-                    setRight("dataMax");
+                if (rightVal > (moment().valueOf() - 5000))
+                    setRight("now");
                 else
                     setRight(rightVal);
 
                 setLeft(leftVal);
-
             }
             return { refAreaLeft: null, refAreaRight: null };
         });
@@ -117,9 +131,12 @@ function RealTime() {
                             </SelectContent>
                         </Select>
 
-                        <Button onClick={zoomOut}>Zoom Out</Button>
-
-                        <DateRangePicker left={zoomGraph.refAreaLeft || left} right={zoomGraph.refAreaRight || right}></DateRangePicker>
+                        <DateRangePicker
+                            left={zoomGraph.refAreaLeft || left}
+                            right={zoomGraph.refAreaRight || right}
+                            setLeft={setLeft}
+                            setRight={setRight}
+                        />
 
                     </div>
                 </CardTitle>
@@ -135,7 +152,7 @@ function RealTime() {
                         >
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart
-                                    data={realTimeData}
+                                    data={chartData}
                                     animationDuration={0}
                                     syncId="realtime-sync"
                                     onMouseDown={onMouseDown}
@@ -150,7 +167,7 @@ function RealTime() {
                                         type="number"
                                         tick={<CustomTimeTick />} // Utilisation du tick personnalisé
                                         tickMargin={20}
-                                        domain={[left, right]}
+                                        domain={["dataMin", "dataMax"]}
                                         padding={10}
                                         allowDataOverflow
                                     />

@@ -1,102 +1,272 @@
 import moment from 'moment';
-import React, { useState, useEffect, useRef } from 'react';
-
-import { ChevronDownIcon, CalendarDays } from "lucide-react"
-
+import React, { useState, useEffect } from 'react';
+import { ArrowLeftIcon, ArrowRightIcon, CalendarDaysIcon, ExpandIcon } from "lucide-react";
 import { Button } from './ui/button';
-import { Calendar } from "./ui/calendar"
-import { Input } from "./ui/input"
-import { Label } from "./ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText, InputGroupTextarea } from "./ui/input-group"
+import { ButtonGroup } from "./ui/button-group"
+import { Calendar } from "./ui/calendar";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "./ui/input-group";
+import { Separator } from "./ui/separator";
+import { Table, TableBody, TableCell, TableRow } from "./ui/table";
+
+
+function parseDuration(str) {
+    const regex = /^now([+-])(\d+)([smh])$/;
+    const match = str.match(regex);
+    if (!match)
+        return null;
+
+    const sign = match[1]
+    return {
+        sign, // "+" ou "-"
+        value: (sign === "-" ? -1 : 1) * parseInt(match[2], 10),
+        unit: match[3] // Unité s, m, ou h
+    };
+}
+
+export const rangeValueToTimestamp = (value) => {
+    if (typeof value === 'string') {
+        const strValue = value.replace(/\s+/g, '');
+        if (strValue === 'now')
+            return moment().valueOf()
+
+        const duration = parseDuration(strValue)
+        if (duration) {
+            const dateValue = moment().add(duration.value, duration.unit)
+            return dateValue.valueOf()
+        }
+    }
+
+    const dateValue = moment(value)
+    if (dateValue.isValid())
+        return dateValue.valueOf()
+
+    throw new Error('rangeValueToTimestamp err value not supported: ', value)
+}
 
 
 function DateRangePicker({ left, right, setLeft, setRight }) {
 
-    const [leftCalendarOpen, setLeftCalendarOpen] = React.useState(false)
-    const [date, setDate] = React.useState(undefined)
+    const [open, setOpen] = useState(false);
+    const [fromCalendarOpen, setFromCalendarOpen] = useState(false);
+    const [toCalendarOpen, setToCalendarOpen] = useState(false);
 
-    const toString = (value) => typeof value === 'string' ? value : moment(value).format("YYYY-MM-DD HH:mm:ss.SSS")
+    const presetRanges = [
+        { label: "Last 1 second", left: 'now-1s', right: 'now' },
+        { label: "Last 10 seconds", left: 'now-10s', right: 'now' },
+        { label: "Last 30 seconds", left: 'now-30s', right: 'now' },
+        { label: "Last 1 minute", left: 'now-1m', right: 'now' },
+        { label: "Last 5 minutes", left: 'now-5m', right: 'now' },
+        { label: "Last 30 minutes", left: 'now-30m', right: 'now' },
+        { label: "Last 1 hour", left: 'now-1h', right: 'now' },
+        { label: "Last 3 hours", left: 'now-3h', right: 'now' },
+        { label: "Last 6 hours", left: 'now-6h', right: 'now' },
+        { label: "Last 24 hours", left: 'now-24h', right: 'now' },
+        { label: "All", left: 'dataMin', right: 'dataMax' },
+    ];
+
+    const [bufferFrom, setBufferFrom] = useState("");
+    const [bufferTo, setBufferTo] = useState("");
+
+    useEffect(() => {
+        setBufferFrom(left)
+        setBufferTo(right)
+    }, [right, left])
+
+
+    const isValid = (value) => {
+        if (value == 'dataMin' || value == 'dataMax')
+            return true
+
+        try {
+            rangeValueToTimestamp(value)
+            return true
+        } catch (e) {
+            return false
+        }
+    }
+
+    const handlePresetSelect = (preset) => {
+        setLeft(preset.left);
+        setRight(preset.right);
+        setOpen(false)
+    };
+
+    const applyTimeRange = () => {
+        if (isValid(bufferFrom))
+            setLeft(bufferFrom);
+
+        if (isValid(bufferTo))
+            setRight(bufferTo);
+
+        setOpen(false)
+    }
+
+    const zoomOut = () => {
+        setLeft("dataMin");
+        setRight("dataMax");
+    }
+
+
+    const getTitle = () => {
+
+        const range = presetRanges.find(item => item.left === left && item.right === right);
+        const label = range ? range.label : null
+        if (label)
+            return <span className="font-bold">{label}</span>
+
+
+        let strLeft = left
+        let strRight = right
+
+        if (moment(left).isValid())
+            strLeft = moment(left).format('YYYY-MM-DD HH:mm:ss')
+        if (moment(right).isValid())
+            strRight = moment(right).format('YYYY-MM-DD HH:mm:ss')
+
+        return (
+            <>
+                <span className="font-bold">{strLeft}</span>
+                <span className="mx-2">to</span>
+                <span className="font-bold">{strRight}</span>
+            </>
+        )
+    }
 
     return (
-        <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="outline">{toString(left)}  -  {toString(right)}</Button>
-            </PopoverTrigger>
+        <Popover open={open} onOpenChange={setOpen}>
 
-            <PopoverContent className="w-auto p-4" align="center" side="bottom">
-                <div className="flex flex-col gap-4">
-                    <div>
-                        <Label htmlFor="from">From</Label>
+            <ButtonGroup>
+                <ButtonGroup className="hidden sm:flex">
+                    <Button variant="outline" size="icon" aria-label="Go Back" onClick={zoomOut}>
+                        <ExpandIcon />
+                    </Button>
+                </ButtonGroup>
 
-                        <InputGroup>
-                            <Popover>
-                                <InputGroupInput
-                                    id="from"
-                                    placeholder={toString(left)}
-                                    
-                                />
+                <ButtonGroup className="hidden sm:flex">
+                    <Button variant="outline" size="icon" aria-label="Go Back">
+                        <ArrowLeftIcon />
+                    </Button>
+                </ButtonGroup>
 
-                                <PopoverTrigger asChild>
-                                    <InputGroupAddon align="inline-end">
-                                        <InputGroupButton>
-                                            <CalendarDays />
-                                        </InputGroupButton>
-                                    </InputGroupAddon>
-                                </PopoverTrigger>
 
-                                <PopoverContent
-                                    className="w-auto overflow-hidden p-0"
-                                >
-                                    <Calendar
-                                        mode="single"
-                                        selected={left}
-                                        captionLayout="dropdown"
-                                        onSelect={(date) => {
+                <PopoverTrigger asChild>
+                    <ButtonGroup>
+                        <Button variant="outline" className="flex items-center gap-x-1">
+                            {getTitle()}
+                        </Button>
+                    </ButtonGroup>
+                </PopoverTrigger>
 
-                                        }}
+                <ButtonGroup className="hidden sm:flex">
+                    <Button variant="outline" size="icon" aria-label="Go Back">
+                        <ArrowRightIcon />
+                    </Button>
+                </ButtonGroup>
+            </ButtonGroup>
+
+
+            <PopoverContent className="w-auto p-5" align="center" side="bottom">
+                <div className="flex flex-row gap-4">
+                    {/* Left Side: Date Pickers */}
+                    <div className="flex flex-col gap-4 w-full">
+                        <Label>Absolute time range</Label>
+                        <div>
+                            <Label htmlFor="from">From</Label>
+                            <InputGroup>
+                                <Popover open={fromCalendarOpen} onOpenChange={setFromCalendarOpen}>
+                                    <InputGroupInput
+                                        id="from"
+                                        placeholder="from"
+                                        value={bufferFrom}
+                                        onChange={(e) => setBufferFrom(e.target.value)}
                                     />
-                                </PopoverContent>
-                            </Popover>
-                        </InputGroup>
+                                    <PopoverTrigger asChild>
+                                        <InputGroupAddon align="inline-end">
+                                            <InputGroupButton >
+                                                <CalendarDaysIcon />
+                                            </InputGroupButton>
+                                        </InputGroupAddon>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto overflow-hidden p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={left}
+                                            captionLayout="dropdown"
+                                            onSelect={(date) => {
+                                                setBufferFrom(moment(date).format("YYYY-MM-DD HH:mm:ss"));
+                                                setFromCalendarOpen(false);
+                                            }}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </InputGroup>
+
+                            <Label htmlFor="to">To</Label>
+                            <InputGroup>
+                                <Popover open={toCalendarOpen} onOpenChange={setToCalendarOpen}>
+                                    <InputGroupInput
+                                        id="to"
+                                        placeholder="to"
+                                        value={bufferTo}
+                                        onChange={(e) => setBufferTo(e.target.value)}
+                                    />
+                                    <PopoverTrigger asChild>
+                                        <InputGroupAddon align="inline-end">
+                                            <InputGroupButton>
+                                                <CalendarDaysIcon />
+                                            </InputGroupButton>
+                                        </InputGroupAddon>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto overflow-hidden p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={left}
+                                            captionLayout="dropdown"
+                                            onSelect={(date) => {
+                                                setBufferTo(moment(date).format("YYYY-MM-DD HH:mm:ss"));
+                                                setToCalendarOpen(false);
+                                            }}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </InputGroup>
+
+                            <Button
+                                className="mt-4"
+                                onClick={applyTimeRange}
+                            >Apply time range</Button>
+                        </div>
                     </div>
-                    <div>
-                        <Label htmlFor="to">To</Label>
-                        <InputGroup>
-                            <Popover>
 
-                                <InputGroupInput
-                                    id="to"
-                                    placeholder={toString(right)}
-                                />
+                    <Separator orientation="vertical" className="h-auto" />
 
-                                <PopoverTrigger asChild>
-                                    <InputGroupAddon align="inline-end">
-                                        <InputGroupButton>
-                                            <CalendarDays />
-                                        </InputGroupButton>
-                                    </InputGroupAddon>
-                                </PopoverTrigger>
-
-                                <PopoverContent
-                                    className="w-auto overflow-hidden p-0"
-                                >
-                                    <Calendar
-                                        mode="single"
-                                        selected={right}
-                                        captionLayout="dropdown"
-                                        onSelect={(date) => {
-
-                                        }}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </InputGroup>
+                    {/* Right Side: Selectable Table */}
+                    <div className="flex flex-col gap-2 w-1/2">
+                        <Label>Preset Ranges</Label>
+                        <div className="flex flex-col gap-1">
+                            <Table>
+                                <TableBody>
+                                    {presetRanges.map((preset) => (
+                                        <TableRow
+                                            key={preset.label}
+                                            onClick={() => handlePresetSelect(preset)}
+                                            className='cursor-pointer'
+                                        >
+                                            <TableCell className="py-2 whitespace-nowrap">{preset.label}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </div>
                 </div>
             </PopoverContent>
         </Popover>
-    )
+    );
 }
 
 export default DateRangePicker;
+
