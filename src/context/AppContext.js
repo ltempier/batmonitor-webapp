@@ -111,12 +111,12 @@ export const AppProvider = ({ children }) => {
          // console.log('Intervalle de polling nettoyé');
       }
 
-      const refresh = async () => {
+      const autoRefresh = async () => {
          try {
             await refreshRealTimeData();
             // Planifier le prochain polling seulement si realTimeRefreshTime > 0
             if (realTimeRefreshTime > 0) {
-               timeoutId.current = setTimeout(refresh, realTimeRefreshTime);
+               timeoutId.current = setTimeout(autoRefresh, realTimeRefreshTime);
             }
          } catch (error) {
             console.error('Erreur lors du polling:', error);
@@ -124,7 +124,7 @@ export const AppProvider = ({ children }) => {
       };
 
       if (realTimeRefreshTime > 0 && lastRealTimeData.current) {
-         refresh();
+         autoRefresh();
       }
 
       // Nettoyage lors du démontage ou changement de realTimeRefreshTime
