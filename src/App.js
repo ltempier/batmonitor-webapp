@@ -1,19 +1,20 @@
 import React, { useContext, useEffect, useRef } from 'react';
-import { IconRefresh, IconSun, IconMoon } from '@tabler/icons-react';
+
+
+import { Button } from './components/ui/button';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "./components/ui/sidebar"
+
 
 import { useApp, AppProvider } from './context/AppContext';
 
-import { useTheme } from './context/ThemeContext';
-
 import RealTime from './components/RealTime';
-import { Button } from './components/ui/button';
+
 
 
 function App() {
 
-  const { theme, toggleTheme } = useTheme();
   return (
-    <div className="App max-w-7xl mx-auto p-4">
+    <div className="App max-w-7xl mx-auto p-4 dark">
 
       {/* <Button
         variant="outline"
@@ -29,9 +30,6 @@ function App() {
       </Button> */}
 
       <AppProvider>
-
-
-
         <RealTime />
       </AppProvider>
 
