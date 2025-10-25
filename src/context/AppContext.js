@@ -7,12 +7,13 @@ export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
 
-   const apiUrl = 'http://192.168.1.123/api/data';
+   // const apiUrl = 'http://192.168.1.123/api/data';
    //const apiUrl = '/api/data';
-   //  const apiUrl = 'data.json';
+   const apiUrl = 'data.json';
 
 
    const [realTimeData, setRealTimeData] = useState([]);
+   const [isRealTimeDataLoading, setIsRealTimeDataLoading] = useState(false);
 
    const lastRealTimeData = useRef(null);
    const timeoutId = useRef(null);
@@ -71,7 +72,8 @@ export const AppProvider = ({ children }) => {
 
    const fetchData = (fromDate = null) => {
       return new Promise((resolve, reject) => {
-         console.log('fetchData ', fromDate);
+         // console.log('fetchData ', fromDate);
+         setIsRealTimeDataLoading(true)
          let url = apiUrl;
          if (fromDate) {
             url += `?from=${encodeURIComponent(moment(fromDate).format('YYYY-MM-DD HH:mm:ss'))}`;
@@ -85,7 +87,8 @@ export const AppProvider = ({ children }) => {
             .catch((error) => {
                console.error('Erreur lors du chargement des données API:', error);
                reject(error); // Reject with the error
-            });
+            })
+            .finally(() => setIsRealTimeDataLoading(false))
       });
    };
 
@@ -107,30 +110,35 @@ export const AppProvider = ({ children }) => {
          clearTimeout(timeoutId.current);
          // console.log('Intervalle de polling nettoyé');
       }
-      if (lastRealTimeData.current && realTimeRefreshTime > 0) {
 
-         const refresh = async () => {
-            try {
-               await refreshRealTimeData()
-               timeoutId.current = setTimeout(refresh, realTimeRefreshTime)
-            } catch (error) {
-               console.error('Erreur lors du polling:', error);
+      const refresh = async () => {
+         try {
+            await refreshRealTimeData();
+            // Planifier le prochain polling seulement si realTimeRefreshTime > 0
+            if (realTimeRefreshTime > 0) {
+               timeoutId.current = setTimeout(refresh, realTimeRefreshTime);
             }
+         } catch (error) {
+            console.error('Erreur lors du polling:', error);
          }
+      };
 
-         refresh()
+      if (realTimeRefreshTime > 0 && lastRealTimeData.current) {
+         refresh();
       }
 
+      // Nettoyage lors du démontage ou changement de realTimeRefreshTime
       return () => {
          if (timeoutId.current) {
             clearTimeout(timeoutId.current);
             // console.log('Timeout nettoyé lors du démontage');
          }
-      }
+      };
    }, [realTimeRefreshTime]);
 
    return (
       <AppContext.Provider value={{
+         isRealTimeDataLoading,
          lastRealTimeData,
          realTimeData,
          realTimeRefreshTime,

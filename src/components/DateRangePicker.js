@@ -73,8 +73,6 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
     const [toCalendarOpen, setToCalendarOpen] = useState(false);
 
     const presetRanges = [
-        // { label: "Last 1 second", left: 'now-1s', right: 'now' },
-        // { label: "Last 10 seconds", left: 'now-10s', right: 'now' },
         { label: "Last 30 seconds", left: 'now-30s', right: 'now' },
         { label: "Last 1 minute", left: 'now-1m', right: 'now' },
         { label: "Last 5 minutes", left: 'now-5m', right: 'now' },
@@ -83,7 +81,7 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
         { label: "Last 3 hours", left: 'now-3h', right: 'now' },
         { label: "Last 6 hours", left: 'now-6h', right: 'now' },
         { label: "Last 24 hours", left: 'now-24h', right: 'now' },
-        { label: "All", left: 'dataMin', right: 'dataMax' },
+        { label: "All data", left: 'dataMin', right: 'dataMax' },
     ];
 
     const [bufferFrom, setBufferFrom] = useState("");
@@ -118,7 +116,6 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
         try {
             const leftTimestamp = rangeValueToTimestamp(left)
             const rightTimestamp = rangeValueToTimestamp(right)
-
             setRight(leftTimestamp)
             setLeft(leftTimestamp + (leftTimestamp - rightTimestamp))
         } catch (e) {
@@ -130,7 +127,6 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
         try {
             const leftTimestamp = rangeValueToTimestamp(left)
             const rightTimestamp = rangeValueToTimestamp(right)
-
             setLeft(rightTimestamp)
             setRight(rightTimestamp - (leftTimestamp - rightTimestamp))
         } catch (e) {
@@ -142,10 +138,8 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
     const getTitle = () => {
 
         const range = presetRanges.find(item => item.left === left && item.right === right);
-        const label = range ? range.label : null
-        if (label)
-            return <span className="font-bold">{label}</span>
-
+        if (range && range.label)
+            return <span className="font-bold">{range.label}</span>
 
         let strLeft = left
         let strRight = right
@@ -198,11 +192,12 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
 
 
             <PopoverContent className="w-auto p-5" align="center" side="bottom">
-                <div className="flex flex-row gap-4">
+                <div className="flex flex-row gap-4 ">
                     {/* Left Side: Date Pickers */}
-                    <div className="flex flex-col gap-4 w-full">
+                    <div className="flex flex-col gap-4 w-full relative">
+
                         <Label>Absolute time range</Label>
-                        <div>
+                        <div className='mt-2'>
                             <Label htmlFor="from">From</Label>
                             <InputGroup>
                                 <Popover open={fromCalendarOpen} onOpenChange={setFromCalendarOpen}>
@@ -262,11 +257,11 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
                                     </PopoverContent>
                                 </Popover>
                             </InputGroup>
+                        </div>
 
-                            <Button
-                                className="mt-4"
-                                onClick={applyTimeRange}
-                            >Apply time range</Button>
+            
+                        <div className="mt-4 flex justify-center">
+                            <Button onClick={applyTimeRange}>Apply time range</Button>
                         </div>
                     </div>
 

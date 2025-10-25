@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import moment from 'moment';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceArea } from 'recharts';
+import { RefreshCcwIcon, LoaderIcon } from "lucide-react";
 
 import { Card, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
@@ -13,7 +14,7 @@ import DateRangePicker, { rangeValueToTimestamp } from "./DateRangePicker"
 import { useApp } from '../context/AppContext';
 
 function RealTime() {
-    const { lastRealTimeData, realTimeData, realTimeRefreshTime, setRealTimeRefreshTime, refreshRealTimeData } = useApp();
+    const { isRealTimeDataLoading, realTimeData, realTimeRefreshTime, setRealTimeRefreshTime, refreshRealTimeData } = useApp();
 
     const [left, setLeft] = useState("dataMin");
     const [right, setRight] = useState("dataMax");
@@ -22,27 +23,26 @@ function RealTime() {
     const [xAxisDomain, setXAxisDomain] = useState([left, right]);
 
     useEffect(() => {
-        if (left === "dataMin" && right === "dataMax")
-            return setChartData(realTimeData)
-
         let minTimestamp = null
         let maxTimestamp = null
         try {
             minTimestamp = rangeValueToTimestamp(left)
-        } catch (e) {
-
-        }
+        } catch (e) { }
         try {
             maxTimestamp = rangeValueToTimestamp(right)
-        } catch (e) {
+        } catch (e) { }
 
-        }
-        setXAxisDomain([minTimestamp === null ? "dataMin" : minTimestamp, maxTimestamp === null ? "dataMax" : maxTimestamp])
+        setXAxisDomain([
+            minTimestamp ? minTimestamp : 'dataMin',
+            maxTimestamp ? maxTimestamp : 'dataMax'
+        ])
+
+        if (left === "dataMin" && right === "dataMax")
+            return setChartData([...realTimeData])
 
         const filteredData = realTimeData.filter((data) => {
             let afterMin = (left === "dataMin") || data.timestamp >= minTimestamp
             let beforeMax = (right === "dataMax") || data.timestamp <= maxTimestamp
-
             return afterMin && beforeMax
         })
         setChartData(filteredData)
@@ -129,9 +129,12 @@ function RealTime() {
             <Card className="mb-1 p-4">
                 <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Button onClick={refreshRealTimeData}>Refresh</Button>
+                        <Button onClick={refreshRealTimeData} disabled={isRealTimeDataLoading}>
+                            {isRealTimeDataLoading ? <LoaderIcon className='animate-spin' /> : <RefreshCcwIcon />}
+                            Refresh
+                        </Button>
                         <Select value={realTimeRefreshTime || 0} onValueChange={setRealTimeRefreshTime}>
-                            <SelectTrigger aria-label="Auto refresh" className="w-[120px]">
+                            <SelectTrigger aria-label="Auto refresh" >
                                 <SelectValue placeholder="Off" />
                             </SelectTrigger>
                             <SelectContent>
@@ -141,14 +144,16 @@ function RealTime() {
                                 <SelectItem value={30000} className="rounded-lg">30s</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
 
+
+                    <div className="flex items-center">
                         <DateRangePicker
                             left={zoomGraph.refAreaLeft || left}
                             right={zoomGraph.refAreaRight || right}
                             setLeft={setLeft}
                             setRight={setRight}
                         />
-
                     </div>
                 </CardTitle>
             </Card>
