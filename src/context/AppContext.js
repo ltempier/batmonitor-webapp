@@ -11,9 +11,12 @@ export const AppProvider = ({ children }) => {
    // const apiUrl = '/api/data';
    // const apiUrl = 'data.json';
 
-
    const [realTimeData, setRealTimeData] = useState([]);
    const [isRealTimeDataLoading, setIsRealTimeDataLoading] = useState(false);
+
+
+   const [historicData, setHistoricData] = useState([]);
+
 
    const lastRealTimeData = useRef(null);
    const timeoutId = useRef(null);
@@ -70,7 +73,7 @@ export const AppProvider = ({ children }) => {
          })
    };
 
-   const fetchData = (fromDate = null) => {
+   const fetchRealTimeData = (fromDate = null) => {
       return new Promise((resolve, reject) => {
          // console.log('fetchData ', fromDate);
          setIsRealTimeDataLoading(true)
@@ -79,7 +82,7 @@ export const AppProvider = ({ children }) => {
             url += `?from=${encodeURIComponent(fromDate)}`;
          }
          axios
-            .get(url, {timeout: fromDate ? 5000 : 10000})
+            .get(url, { timeout: fromDate ? 5000 : 15000 })
             .then((response) => {
                appendRealTimeData(response.data);
                resolve(response.data); // Resolve with the data
@@ -92,18 +95,9 @@ export const AppProvider = ({ children }) => {
       });
    };
 
-   const refreshRealTimeData = () => fetchData(lastRealTimeData.current ? lastRealTimeData.current.date : null)
-
-   useEffect(() => {
-      (async () => {
-         try {
-            await fetchData();
-            setRealTimeRefreshTime(5000); // Set polling interval after initial fetch
-         } catch (error) {
-            console.error('Erreur initiale dans fetchData:', error);
-         }
-      })();
-   }, []);
+   const refreshRealTimeData = async () => {
+      return await fetchRealTimeData(lastRealTimeData.current ? lastRealTimeData.current.date : null);
+   };
 
    useEffect(() => {
       if (timeoutId.current) {
@@ -138,6 +132,7 @@ export const AppProvider = ({ children }) => {
 
    return (
       <AppContext.Provider value={{
+         historicData,
          isRealTimeDataLoading,
          lastRealTimeData,
          realTimeData,

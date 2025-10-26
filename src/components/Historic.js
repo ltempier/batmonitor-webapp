@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import axios from 'axios';
 import moment from 'moment';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceArea } from 'recharts';
 import { RefreshCcwIcon, LoaderIcon } from "lucide-react";
@@ -10,26 +11,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 import DateRangePicker, { rangeValueToTimestamp } from "./DateRangePicker"
 
-
 import { useApp } from '../context/AppContext';
 
-function RealTime() {
-    const { isRealTimeDataLoading, realTimeData, realTimeRefreshTime, setRealTimeRefreshTime, refreshRealTimeData } = useApp();
+function Historic() {
+
+    const { historicData } = useApp();
 
     const [left, setLeft] = useState("dataMin");
     const [right, setRight] = useState("dataMax");
 
     const [chartData, setChartData] = useState([]);
     const [xAxisDomain, setXAxisDomain] = useState([left, right]);
+    const [zoomGraph, setZoomGraph] = useState({
+        refAreaLeft: null,
+        refAreaRight: null,
+    });
+
+    const vColor = '#03a5fc';
+    const aColor = '#d32525';
+
 
     useEffect(() => {
-        const init = async () => {
-            await refreshRealTimeData()
-            setRealTimeRefreshTime(5000)
-        }
-        init()
-        return () => setRealTimeRefreshTime(0)
+        const apiUrl = 'http://192.168.1.122/api/files';
+        // const apiUrl = '/api/files';
+        axios.get(apiUrl)
+            .then((response) => {
+               
+            })
+            .catch((error) => {
+                console.error('Erreur lors du chargement des données API:', error);
+            })
+
     }, [])
+
 
     useEffect(() => {
         let minTimestamp = null
@@ -47,24 +61,16 @@ function RealTime() {
         ])
 
         if (left === "dataMin" && right === "dataMax")
-            return setChartData([...realTimeData])
+            return setChartData([...historicData])
 
-        const filteredData = realTimeData.filter((data) => {
+        const filteredData = historicData.filter((data) => {
             let afterMin = (left === "dataMin") || data.timestamp >= minTimestamp
             let beforeMax = (right === "dataMax") || data.timestamp <= maxTimestamp
             return afterMin && beforeMax
         })
         setChartData(filteredData)
-    }, [realTimeData, left, right])
+    }, [historicData, left, right])
 
-
-    const [zoomGraph, setZoomGraph] = useState({
-        refAreaLeft: null,
-        refAreaRight: null,
-    });
-
-    const vColor = '#03a5fc';
-    const aColor = '#d32525';
 
     // Configuration des canaux pour chaque graphique
     const chartConfigs = [
@@ -121,7 +127,6 @@ function RealTime() {
             if (currentZoom.refAreaLeft && currentZoom.refAreaRight) {
                 const leftVal = Math.min(Number(currentZoom.refAreaLeft), Number(currentZoom.refAreaRight));
                 const rightVal = Math.max(Number(currentZoom.refAreaRight), Number(currentZoom.refAreaLeft));
-
                 if (rightVal > (moment().valueOf() - 5000))
                     setRight("now");
                 else
@@ -137,23 +142,6 @@ function RealTime() {
         <div>
             <div className="mb-2">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Button onClick={refreshRealTimeData} disabled={isRealTimeDataLoading}>
-                            {isRealTimeDataLoading ? <LoaderIcon className='animate-spin' /> : <RefreshCcwIcon />}
-                            Refresh
-                        </Button>
-                        <Select value={realTimeRefreshTime || 0} onValueChange={setRealTimeRefreshTime}>
-                            <SelectTrigger aria-label="Auto refresh" >
-                                <SelectValue placeholder="Off" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value={0} className="rounded-lg">Off</SelectItem>
-                                <SelectItem value={1000} className="rounded-lg">1s</SelectItem>
-                                <SelectItem value={5000} className="rounded-lg">5s</SelectItem>
-                                <SelectItem value={30000} className="rounded-lg">30s</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
 
 
                     <div className="flex items-center">
@@ -257,4 +245,4 @@ function RealTime() {
     );
 }
 
-export default RealTime;
+export default Historic;
