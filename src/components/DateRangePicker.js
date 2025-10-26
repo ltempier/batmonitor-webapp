@@ -65,7 +65,7 @@ const rangeValueToString = (value) => {
     return value
 }
 
-function DateRangePicker({ left, right, setLeft, setRight }) {
+function DateRangePicker({ left, right, setLeft, setRight , ...props}) {
 
     const [open, setOpen] = useState(false);
     const [fromCalendarOpen, setFromCalendarOpen] = useState(false);
@@ -158,7 +158,7 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
     }
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={setOpen} {...props}>
 
             <ButtonGroup>
                 <ButtonGroup className="hidden sm:flex">

@@ -2,12 +2,14 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import moment from 'moment';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceArea } from 'recharts';
-import { RefreshCcwIcon, LoaderIcon } from "lucide-react";
+import { RefreshCcwIcon, LoaderIcon, ExternalLink, Download, ChevronDown, ChevronUp } from "lucide-react";
 
 import { Card, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import { Table, TableHead, TableHeader, TableBody, TableCell, TableRow } from "./ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger, } from "./ui/collapsible"
 
 import DateRangePicker, { rangeValueToTimestamp } from "./DateRangePicker"
 
@@ -15,7 +17,10 @@ import { useApp } from '../context/AppContext';
 
 function Historic() {
 
-    const { historicData } = useApp();
+    const { historicData, loadHistoricFile } = useApp();
+    const [historicFiles, setHistoricFiles] = useState([]);
+    const [showHistoricFiles, setShowHistoricFiles] = useState(false)
+
 
     const [left, setLeft] = useState("dataMin");
     const [right, setRight] = useState("dataMax");
@@ -29,14 +34,29 @@ function Historic() {
 
     const vColor = '#03a5fc';
     const aColor = '#d32525';
-
+    const wColor = '#1fd741ff';
 
     useEffect(() => {
         const apiUrl = 'http://192.168.1.122/api/files';
         // const apiUrl = '/api/files';
         axios.get(apiUrl)
             .then((response) => {
-               
+                setHistoricFiles(() => {
+                    const files = [];
+                    (response.data || []).forEach((file) => {
+                        if (file.filename) {
+                            // Regex pour extraire la date (YYYY-MM-DD)
+                            const dateMatch = file.filename.match(/^(\d{4}-\d{2}-\d{2})/);
+                            const date = dateMatch ? dateMatch[1] : null; // Récupère la date ou null si pas trouvée
+                            files.push({
+                                date: date,
+                                ...file
+                            });
+                        }
+                    });
+                    return files;
+                });
+                setShowHistoricFiles(true)
             })
             .catch((error) => {
                 console.error('Erreur lors du chargement des données API:', error);
@@ -76,15 +96,15 @@ function Historic() {
     const chartConfigs = [
         {
             title: 'Channel 1',
-            dataKeys: { voltage: 'v1', current: 'a1' },
+            dataKeys: { voltage: 'v1', current: 'a1', energy: 'w1' },
         },
         {
             title: 'Channel 2',
-            dataKeys: { voltage: 'v2', current: 'a2' },
+            dataKeys: { voltage: 'v2', current: 'a2', energy: 'w2' },
         },
         {
             title: 'Channel 3',
-            dataKeys: { voltage: 'v3', current: 'a3' },
+            dataKeys: { voltage: 'v3', current: 'a3', energy: 'w3' },
         },
     ];
 
@@ -140,20 +160,81 @@ function Historic() {
 
     return (
         <div>
-            <div className="mb-2">
-                <div className="flex items-center justify-between">
+            <Card className="mb-2">
+
+                <Collapsible open={showHistoricFiles}
+                    onOpenChange={setShowHistoricFiles}>
+
+                    <CardTitle className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="outline">
+                                        Load Historic Files
+                                        {showHistoricFiles ? <ChevronUp /> : <ChevronDown />}
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </div>
+
+                            <div className="flex items-center">
+                                <DateRangePicker
+                                    left={zoomGraph.refAreaLeft || left}
+                                    right={zoomGraph.refAreaRight || right}
+                                    setLeft={setLeft}
+                                    setRight={setRight}
+                                />
+                            </div>
+                        </div>
+                    </CardTitle>
+
+                    <CollapsibleContent>
+
+                        <CardContent >
+                            <Table className="p-0">
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead >Date</TableHead >
+                                        <TableHead >Filename</TableHead >
+                                        <TableHead >Action</TableHead >
+                                        <TableHead >Size</TableHead >
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {historicFiles.map((file, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{file.date}</TableCell>
+                                            <TableCell>{file.filename}</TableCell>
+                                            <TableCell className="p-0">
+                                                <div className="flex gap-2">
+                                                    <Button variant="ghost" size="icon">
+                                                        <a
+                                                            href={file.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
+                                                            <Download />
+                                                        </a>
+                                                    </Button>
+
+                                                    {
+                                                        file.date && <Button
+                                                            onClick={() => loadHistoricFile(file)}
+                                                            variant="outline"
+                                                        >Load file</Button>
+                                                    }
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{file.size / 1000} ko</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </CollapsibleContent>
+                </Collapsible>
+            </Card>
 
 
-                    <div className="flex items-center">
-                        <DateRangePicker
-                            left={zoomGraph.refAreaLeft || left}
-                            right={zoomGraph.refAreaRight || right}
-                            setLeft={setLeft}
-                            setRight={setRight}
-                        />
-                    </div>
-                </div>
-            </div>
 
             {chartConfigs.map((config, index) => (
                 <Card key={index} className="mb-2">
@@ -187,7 +268,7 @@ function Historic() {
 
                                     <YAxis
                                         yAxisId="voltage"
-                                        domain={['dataMin - 1', 'dataMax + 1']}
+                                        domain={[0, 13]}
                                         label={{ value: 'Voltage (V)', angle: -90, position: 'insideLeft' }}
                                         tickFormatter={(value) => value.toFixed(2) + ' V'}
                                     />
@@ -197,6 +278,13 @@ function Historic() {
                                         orientation="right"
                                         label={{ value: 'Current (A)', angle: 90, position: 'insideRight' }}
                                         tickFormatter={(value) => value.toFixed(2) + ' A'}
+                                    />
+                                    <YAxis
+                                        yAxisId="energy"
+                                        domain={['0', 'dataMax + 1']}
+                                        orientation="right"
+                                        label={{ value: 'Energy (Wh)', angle: 90, position: 'insideRight' }}
+                                        tickFormatter={(value) => value.toFixed(2) + ' Wh'}
                                     />
                                     <ChartTooltip
                                         content={<ChartTooltipContent />}
@@ -226,6 +314,15 @@ function Historic() {
                                         type="monotone"
                                         dataKey={config.dataKeys.current}
                                         stroke={aColor}
+                                        strokeWidth={1}
+                                        dot={false}
+                                        isAnimationActive={false}
+                                    />
+                                    <Line
+                                        yAxisId="energy"
+                                        type="monotone"
+                                        dataKey={config.dataKeys.energy}
+                                        stroke={wColor}
                                         strokeWidth={1}
                                         dot={false}
                                         isAnimationActive={false}

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import moment from 'moment';
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import Papa from 'papaparse';
 
 export const AppContext = createContext();
 
@@ -23,7 +24,7 @@ export const AppProvider = ({ children }) => {
 
    const [realTimeRefreshTime, setRealTimeRefreshTime] = useState(0);
 
-   const formatApiData = (data) => {
+   const formatRealTimeData = (data) => {
       try {
          if (!data || !data.date || !moment(data.date).isValid()) {
             throw new Error('Données invalides ou date manquante');
@@ -52,7 +53,7 @@ export const AppProvider = ({ children }) => {
    };
 
    const appendRealTimeData = (apiData) => {
-      const newData = (apiData || []).map(formatApiData).filter((item) => item !== null);
+      const newData = (apiData || []).map(formatRealTimeData).filter((item) => item !== null);
       newData.sort((a, b) => a.timestamp - b.timestamp); // old -> new
 
       if (lastRealTimeData.current && lastRealTimeData.current.timestamp) {
@@ -99,6 +100,81 @@ export const AppProvider = ({ children }) => {
       return await fetchRealTimeData(lastRealTimeData.current ? lastRealTimeData.current.date : null);
    };
 
+   const formatHistoricData = (data) => {
+      try {
+         if (!data || !data.date || !moment(data.date).isValid()) {
+            throw new Error('Données invalides ou date manquante');
+         }
+
+         const v1 = parseFloat(data.avg_v1)
+         const v2 = parseFloat(data.avg_v2)
+         const v3 = parseFloat(data.avg_v3)
+         const a1 = parseFloat(data.avg_a1)
+         const a2 = parseFloat(data.avg_a2)
+         const a3 = parseFloat(data.avg_a3)
+
+         const w1 = parseFloat(data.ws1)
+         const w2 = parseFloat(data.ws2)
+         const w3 = parseFloat(data.ws3)
+
+         return {
+            ...data,
+            timestamp: moment(data.date).valueOf(),
+            avgCurrent: (a1 + a2 + a3) / 3,
+            bv1: v3,
+            bv2: v2 - v3,
+            bv3: v1 - v2,
+            v1, a1, w1,
+            v2, a2, w2,
+            v3, a3, w3
+         };
+      } catch (error) {
+         console.error('Erreur dans formatItem:', error, data);
+         return null;
+      }
+   };
+
+   const loadHistoricFile = async (file) => {
+
+      axios.get(file.url, { responseType: 'text' })
+         .then((response) => {
+            const csvData = response.data;
+
+            Papa.parse(csvData, {
+               header: true, // Si le CSV a des en-têtes
+               skipEmptyLines: true, // Ignore les lignes vides
+               complete: (result) => {
+                  // Étape 4 : Traiter les données parsées
+                  const parsedData = (result.data || []).map(formatHistoricData); // Tableau d'objets
+                  
+                  setHistoricData((oldHistoricData) => {
+                     const newHistoricData = [...oldHistoricData];
+                     parsedData.forEach((newData) => {
+                        const existingIndex = newHistoricData.findIndex(
+                           (item) => item.timestamp === newData.timestamp
+                        );
+                        if (existingIndex === -1) {
+                           newHistoricData.push(newData);
+                        } else {
+                           newHistoricData[existingIndex] = {
+                              ...newHistoricData[existingIndex],
+                              ...newData
+                           };
+                        }
+                     });
+                     return newHistoricData.sort((a, b) => a.timestamp - b.timestamp);
+                  });
+               },
+               error: (error) => {
+                  console.error('Erreur lors du parsing CSV :', error);
+               }
+            });
+         })
+         .catch((error) => {
+            console.error('Erreur lors du chargement des données API:', error);
+         })
+   }
+
    useEffect(() => {
       if (timeoutId.current) {
          clearTimeout(timeoutId.current);
@@ -137,6 +213,7 @@ export const AppProvider = ({ children }) => {
          lastRealTimeData,
          realTimeData,
          realTimeRefreshTime,
+         loadHistoricFile,
          setRealTimeRefreshTime,
          refreshRealTimeData
       }}>

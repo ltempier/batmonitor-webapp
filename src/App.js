@@ -1,25 +1,12 @@
 import React from 'react';
-import { Routes, Route, Link, NavLink } from 'react-router-dom';
+import { Routes, Route, Link, NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboardIcon } from 'lucide-react';
-import { Separator } from './components/ui/separator';
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-} from './components/ui/sidebar';
-import { AppProvider } from './context/AppContext';
 
+import { Separator } from './components/ui/separator';
+import { SidebarInset, SidebarProvider, SidebarTrigger, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, } from './components/ui/sidebar';
+import { Breadcrumb, BreadcrumbEllipsis, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "./components/ui/breadcrumb"
+
+import { AppProvider } from './context/AppContext';
 
 import RealTime from './components/RealTime';
 import Historic from './components/Historic';
@@ -56,11 +43,37 @@ const menu = [
   },
 ];
 
+function getTitle(pathname) {
+
+  // Recherche dans le menu
+  for (const group of menu) {
+    // Vérifier si le chemin correspond au chemin principal du groupe
+    if (group.path === pathname) {
+      return `${group.displayName}`;
+    }
+    // Vérifier les sous-menus
+    if (group.subMenu) {
+      for (const item of group.subMenu) {
+        if (item.path === pathname) {
+          return `${group.displayName} > ${item.displayName}`;
+        }
+      }
+    }
+  }
+
+  // Retour par défaut si aucun chemin ne correspond
+  return 'Not Found';
+}
+
 function App() {
+
+  const location = useLocation();
+
   return (
     <AppProvider>
       <SidebarProvider>
-        <Sidebar>
+        <Sidebar className="mt-1">
+
           <SidebarHeader>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -69,8 +82,8 @@ function App() {
                     <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                       <LayoutDashboardIcon className="size-4" />
                     </div>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">ESP32</span>
+                    <div className="grid flex-1 text-left leading-tight">
+                      <span className="truncate font-medium">ESP32_BATTERY</span>
                       <span className="truncate text-xs">Dashboard</span>
                     </div>
                   </Link>
@@ -111,8 +124,10 @@ function App() {
           <header className="flex h-16 shrink-0 items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
+            {getTitle(location.pathname)}
           </header>
           <Separator orientation="horizontal" className="mr-2" />
+
           <div className="flex flex-1 flex-col gap-4 p-4">
             <Routes>
               {/* Dynamically generate routes from menu */}
