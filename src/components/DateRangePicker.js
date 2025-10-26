@@ -11,22 +11,21 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "
 import { Separator } from "./ui/separator";
 import { Table, TableBody, TableCell, TableRow } from "./ui/table";
 
-
-function parseDuration(str) {
-    const regex = /^now([+-])(\d+)([smh])$/;
-    const match = str.match(regex);
-    if (!match)
-        return null;
-
-    const sign = match[1]
-    return {
-        sign, // "+" ou "-"
-        value: (sign === "-" ? -1 : 1) * parseInt(match[2], 10),
-        unit: match[3] // Unité s, m, ou h
-    };
-}
-
 export const rangeValueToTimestamp = (value) => {
+
+    function parseDuration(str) {
+        const regex = /^now([+-])(\d+)([smh])$/;
+        const match = str.match(regex);
+        if (!match)
+            return null;
+
+        const sign = match[1]
+        return {
+            sign, // "+" ou "-"
+            value: (sign === "-" ? -1 : 1) * parseInt(match[2], 10),
+            unit: match[3] // Unité s, m, ou h
+        };
+    }
 
     const dateValue = moment(value)
     if (dateValue.isValid())
@@ -35,7 +34,7 @@ export const rangeValueToTimestamp = (value) => {
     if (typeof value === 'string') {
         const strValue = value.replace(/\s+/g, '');
         if (strValue === 'now')
-            return moment().add(1, 's').valueOf()
+            return moment().valueOf()
 
         const duration = parseDuration(strValue)
         if (duration) {
@@ -259,7 +258,7 @@ function DateRangePicker({ left, right, setLeft, setRight }) {
                             </InputGroup>
                         </div>
 
-            
+
                         <div className="mt-4 flex justify-center">
                             <Button onClick={applyTimeRange}>Apply time range</Button>
                         </div>

@@ -1,21 +1,22 @@
 import './index.css';
-import 'uplot/dist/uPlot.min.css';
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-
+import './index.css';
 
 import { ThemeProvider } from './context/ThemeContext';
+import { AppProvider } from './context/AppContext';
 
 import App from './App';
+
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <ThemeProvider>
-
-      <App />
-    
+      <AppProvider>
+        <App />
+      </AppProvider>
     </ThemeProvider>
   </React.StrictMode>
 );

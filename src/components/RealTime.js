@@ -126,8 +126,8 @@ function RealTime() {
 
     return (
         <div>
-            <Card className="mb-1 p-4">
-                <CardTitle className="flex items-center justify-between">
+            <div className="mb-2">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Button onClick={refreshRealTimeData} disabled={isRealTimeDataLoading}>
                             {isRealTimeDataLoading ? <LoaderIcon className='animate-spin' /> : <RefreshCcwIcon />}
@@ -155,11 +155,11 @@ function RealTime() {
                             setRight={setRight}
                         />
                     </div>
-                </CardTitle>
-            </Card>
+                </div>
+            </div>
 
             {chartConfigs.map((config, index) => (
-                <Card key={index} className="mb-1">
+                <Card key={index} className="mb-2">
                     <CardTitle className="text-center m-2">{config.title}</CardTitle>
                     <CardContent>
                         <ChartContainer
@@ -184,8 +184,8 @@ function RealTime() {
                                         tick={<CustomTimeTick />} // Utilisation du tick personnalisé
                                         tickMargin={20}
                                         domain={xAxisDomain}
-                                    // padding={10}
-                                    // allowDataOverflow
+                                        // padding={10}
+                                        allowDataOverflow
                                     />
 
                                     <YAxis

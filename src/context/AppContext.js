@@ -7,9 +7,9 @@ export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
 
-   // const apiUrl = 'http://192.168.1.123/api/data';
-   //const apiUrl = '/api/data';
-   const apiUrl = 'data.json';
+   const apiUrl = 'http://192.168.1.122/api/data';
+   // const apiUrl = '/api/data';
+   // const apiUrl = 'data.json';
 
 
    const [realTimeData, setRealTimeData] = useState([]);
@@ -22,7 +22,7 @@ export const AppProvider = ({ children }) => {
 
    const formatApiData = (data) => {
       try {
-         if (!data || !data.date || !moment(data.date, 'YYYY-MM-DD HH:mm:ss.SSS').isValid()) {
+         if (!data || !data.date || !moment(data.date).isValid()) {
             throw new Error('Données invalides ou date manquante');
          }
 
@@ -35,7 +35,7 @@ export const AppProvider = ({ children }) => {
 
          return {
             ...data,
-            timestamp: moment.utc(data.date).valueOf(),
+            timestamp: moment(data.date).valueOf(),
             avgCurrent: (a1 + a2 + a3) / 3,
             bv1: v3,
             bv2: v2 - v3,
@@ -76,10 +76,10 @@ export const AppProvider = ({ children }) => {
          setIsRealTimeDataLoading(true)
          let url = apiUrl;
          if (fromDate) {
-            url += `?from=${encodeURIComponent(moment(fromDate).format('YYYY-MM-DD HH:mm:ss'))}`;
+            url += `?from=${encodeURIComponent(fromDate)}`;
          }
          axios
-            .get(url)
+            .get(url, {timeout: fromDate ? 5000 : 10000})
             .then((response) => {
                appendRealTimeData(response.data);
                resolve(response.data); // Resolve with the data
