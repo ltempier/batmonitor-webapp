@@ -15,9 +15,9 @@ import Status from './components/Status';
 import Logs from './components/Logs';
 
 // Temporary components for undefined routes
-const Battery = () => <div>Battery Dashboard Page</div>;
-const Home = () => <div>Home Page</div>;
-const NotFound = () => <div>404 - Page Not Found</div>;
+const Battery = () => <div>TODO Battery Dashboard Page</div>;
+const Home = () => <div>TODO Home Page</div>;
+const NotFound = () => <div>TODO 404 - Page Not Found</div>;
 
 // Menu data
 const menu = [
