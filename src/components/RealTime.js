@@ -63,8 +63,9 @@ function RealTime() {
         refAreaRight: null,
     });
 
-    const vColor = '#03a5fc';
-    const aColor = '#d32525';
+    const vColor = 'rgb(0, 0, 255)';
+    const aColor = 'rgb(255, 0, 0)';
+    const wColor = 'rgb(0, 255, 0)';
 
     // Configuration des canaux pour chaque graphique
     const chartConfigs = [
@@ -121,7 +122,7 @@ function RealTime() {
             if (currentZoom.refAreaLeft && currentZoom.refAreaRight) {
                 const leftVal = Math.min(Number(currentZoom.refAreaLeft), Number(currentZoom.refAreaRight));
                 const rightVal = Math.max(Number(currentZoom.refAreaRight), Number(currentZoom.refAreaLeft));
-
+                
                 if (rightVal > (moment().valueOf() - 5000))
                     setRight("now");
                 else

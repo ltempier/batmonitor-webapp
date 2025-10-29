@@ -8,10 +8,6 @@ export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
 
-   const apiUrl = 'http://192.168.1.122/api/data';
-   // const apiUrl = '/api/data';
-   // const apiUrl = 'data.json';
-
    const [realTimeData, setRealTimeData] = useState([]);
    const [isRealTimeDataLoading, setIsRealTimeDataLoading] = useState(false);
 
@@ -78,12 +74,12 @@ export const AppProvider = ({ children }) => {
       return new Promise((resolve, reject) => {
          // console.log('fetchData ', fromDate);
          setIsRealTimeDataLoading(true)
-         let url = apiUrl;
+         let url = `${process.env.REACT_APP_BASE_URL}/api/data`;
          if (fromDate) {
             url += `?from=${encodeURIComponent(fromDate)}`;
          }
          axios
-            .get(url, { timeout: fromDate ? 5000 : 15000 })
+            .get(url)
             .then((response) => {
                appendRealTimeData(response.data);
                resolve(response.data); // Resolve with the data

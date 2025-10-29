@@ -10,12 +10,12 @@ import { AppProvider } from './context/AppContext';
 
 import RealTime from './components/RealTime';
 import Historic from './components/Historic';
+import Wifi from './components/Wifi';
+import Status from './components/Status';
+import Logs from './components/Logs';
 
 // Temporary components for undefined routes
 const Battery = () => <div>Battery Dashboard Page</div>;
-const Wifi = () => <div>Wifi Settings Page</div>;
-const Status = () => <div>Status Page</div>;
-const Logs = () => <div>Logs Page</div>;
 const Home = () => <div>Home Page</div>;
 const NotFound = () => <div>404 - Page Not Found</div>;
 
@@ -32,7 +32,7 @@ const menu = [
     ],
   },
   {
-    displayName: 'ESP32 Settings',
+    displayName: 'ESP32',
     // path: '/status', // Default to first submenu item
     // element: <Status />,
     subMenu: [
@@ -73,7 +73,6 @@ function App() {
     <AppProvider>
       <SidebarProvider>
         <Sidebar className="mt-1">
-
           <SidebarHeader>
             <SidebarMenu>
               <SidebarMenuItem>

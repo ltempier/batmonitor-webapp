@@ -32,14 +32,12 @@ function Historic() {
         refAreaRight: null,
     });
 
-    const vColor = '#03a5fc';
-    const aColor = '#d32525';
-    const wColor = '#1fd741ff';
+    const vColor = 'rgb(0, 0, 255)';
+    const aColor = 'rgb(255, 0, 0)';
+    const wColor = 'rgb(0, 255, 0)';
 
     useEffect(() => {
-        const apiUrl = 'http://192.168.1.122/api/files';
-        // const apiUrl = '/api/files';
-        axios.get(apiUrl)
+        axios.get(`${process.env.REACT_APP_BASE_URL}/api/files`)
             .then((response) => {
                 setHistoricFiles(() => {
                     const files = [];
@@ -56,7 +54,8 @@ function Historic() {
                     });
                     return files;
                 });
-                setShowHistoricFiles(true)
+                if (historicData.length === 0)
+                    setShowHistoricFiles(true)
             })
             .catch((error) => {
                 console.error('Erreur lors du chargement des données API:', error);
@@ -147,10 +146,10 @@ function Historic() {
             if (currentZoom.refAreaLeft && currentZoom.refAreaRight) {
                 const leftVal = Math.min(Number(currentZoom.refAreaLeft), Number(currentZoom.refAreaRight));
                 const rightVal = Math.max(Number(currentZoom.refAreaRight), Number(currentZoom.refAreaLeft));
-                if (rightVal > (moment().valueOf() - 5000))
-                    setRight("now");
-                else
-                    setRight(rightVal);
+                // if (rightVal > (moment().valueOf() - 5000))
+                //     setRight("now");
+                // else
+                setRight(rightVal);
 
                 setLeft(leftVal);
             }
@@ -160,80 +159,76 @@ function Historic() {
 
     return (
         <div>
-            <Card className="mb-2">
-
+            <div className="mb-2">
                 <Collapsible open={showHistoricFiles}
                     onOpenChange={setShowHistoricFiles}>
 
-                    <CardTitle className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <CollapsibleTrigger asChild>
-                                    <Button variant="outline">
-                                        Load Historic Files
-                                        {showHistoricFiles ? <ChevronUp /> : <ChevronDown />}
-                                    </Button>
-                                </CollapsibleTrigger>
-                            </div>
-
-                            <div className="flex items-center">
-                                <DateRangePicker
-                                    left={zoomGraph.refAreaLeft || left}
-                                    right={zoomGraph.refAreaRight || right}
-                                    setLeft={setLeft}
-                                    setRight={setRight}
-                                />
-                            </div>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <CollapsibleTrigger asChild>
+                                <Button variant="outline">
+                                    Load Historic Files
+                                    {showHistoricFiles ? <ChevronUp /> : <ChevronDown />}
+                                </Button>
+                            </CollapsibleTrigger>
                         </div>
-                    </CardTitle>
+
+                        <div className="flex items-center">
+                            <DateRangePicker
+                                left={zoomGraph.refAreaLeft || left}
+                                right={zoomGraph.refAreaRight || right}
+                                setLeft={setLeft}
+                                setRight={setRight}
+                            />
+                        </div>
+                    </div>
 
                     <CollapsibleContent>
+                        <Card className="mt-2">
+                            <CardContent className="p-0">
 
-                        <CardContent >
-                            <Table className="p-0">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead >Date</TableHead >
-                                        <TableHead >Filename</TableHead >
-                                        <TableHead >Action</TableHead >
-                                        <TableHead >Size</TableHead >
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {historicFiles.map((file, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell>{file.date}</TableCell>
-                                            <TableCell>{file.filename}</TableCell>
-                                            <TableCell className="p-0">
-                                                <div className="flex gap-2">
-                                                    <Button variant="ghost" size="icon">
-                                                        <a
-                                                            href={file.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                        >
-                                                            <Download />
-                                                        </a>
-                                                    </Button>
-
-                                                    {
-                                                        file.date && <Button
-                                                            onClick={() => loadHistoricFile(file)}
-                                                            variant="outline"
-                                                        >Load file</Button>
-                                                    }
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>{file.size / 1000} ko</TableCell>
+                                <Table className="p-0">
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead >Date</TableHead >
+                                            <TableHead >Filename</TableHead >
+                                            <TableHead >Size</TableHead >
+                                            <TableHead >Action</TableHead >
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
+                                    </TableHeader>
+
+                                    <TableBody>
+                                        {historicFiles.map((file, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>{file.date ? file.date : "-"}</TableCell>
+                                                <TableCell>{file.filename}</TableCell>
+                                                <TableCell>{file.size / 1000} ko</TableCell>
+                                                <TableCell className="p-0">
+                                                    <div className="flex gap-2">
+                                                        <Button variant="ghost" size="icon">
+                                                            <a
+                                                                href={file.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                            >
+                                                                <Download />
+                                                            </a>
+                                                        </Button>
+
+                                                        {file.date && <Button onClick={() => loadHistoricFile(file)} variant="outline"    >Load file</Button>}
+                                                    </div>
+                                                </TableCell>
+
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+
+                            </CardContent>
+                        </Card>
                     </CollapsibleContent>
                 </Collapsible>
-            </Card>
-
+            </div>
 
 
             {chartConfigs.map((config, index) => (
